@@ -13,12 +13,6 @@ date: "2023-July"
 
 **Junru Jiang**
 
-Enbang Cui
-
-Dennis Matott
-
-Saanvi Malhotra
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message=FALSE, fig.height = 3)
