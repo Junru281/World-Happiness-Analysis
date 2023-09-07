@@ -1,0 +1,273 @@
+---
+title: "Final Project"
+output: html_document
+date: "2023-July"
+---
+
+## Group 312-1
+
+## Members Present
+
+- ADD THE NAMES OF EVERYONE PRESENT
+- MAKE THE NAME **BOLD** OF THE RESPONSIBLE PERSON TO UPLOAD THE FILES FOR THE GROUP
+
+**Junru Jiang**
+
+Enbang Cui
+
+Dennis Matott
+
+Saanvi Malhotra
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, fig.height = 3)
+library(tidyverse)
+source("../../scripts/ggprob.R")
+```
+
+## Introduction
+The COVID-19 pandemic has had a profound impact on people’s lives around the world, affecting everything from their physical health to their mental well-being. Against this backdrop, the World Happiness Report 2021 provides a unique opportunity to identify the global happiness pattern, explore the factors that contribute to people’s happiness and well-being, and to understand how these factors vary across different regions of the world. In the pursuit of understanding global well-being patterns, a pertinent research question of interest arises: 
+
+  - Do people who live in West Europe report being happier, on average, than people who do not live in West Europe? 
+
+This research question delves into the intricate interplay between geographical location and subjective well-being, seeking to shed light on potential disparities in reported happiness across different regions. Establishing these disparities is the first step into researching potential reasons to why they arise. In order to find the disparities, numerical and graphical summaries need to be calculated and displayed. Performing a t-test is also a necessary step in proving the statistical significance of any results. These tests will show a disparity. In this project, we will argue that people who live in West Europe report being happier than other regions on average.
+
+
+```{r, include=FALSE}
+data = read_csv("../../data/world-happiness-report-2021.csv")
+head(data)
+```
+
+
+```{r, include=FALSE}
+happiness_2021 = data %>%
+  select("Country name", "Regional indicator", "Ladder score", "Standard error of ladder score", "Logged GDP per capita", "Social support","Healthy life expectancy", "Freedom to make life choices") %>% 
+  rename(country = `Country name`,
+        region = `Regional indicator`,
+        ladder_score = `Ladder score`,
+        sd_ladder = `Standard error of ladder score`,
+        GDP = `Logged GDP per capita`, 
+        social_support = `Social support`,
+        expectancy = `Healthy life expectancy`, 
+        freedom = `Freedom to make life choices`) 
+happiness_2021
+```
+
+## Background
+
+The data presented above is sourced from the World Happiness Report 2021^[https://worldhappiness.report/ed/2021/#appendices-and-data], an annual publication that aims to provide a comprehensive understanding of global happiness and well-being. The data set comprises information from various countries, covering multiple regions worldwide. Each entry represents a singular country that has data that was collected through a combination of national surveys, international organizations' data, and research institutions' contributions. Most importantly, the Gallup World Poll, which is unique in the range and comparability of its global series of annual surveys. This was supplemented by the World Risk Poll and the the life satisfaction data collected during 2020 as part of the Covid Data Hub run in 2020 by Imperial College London and the YouGov team.
+The variables in the data set have specific meanings and relevance to the study of happiness and well-being. Here are the main variables we are concernced with in the data set:
+
+**Country** - The country in which the survey participant resided
+
+**Regional indicator** - The region of the country variable
+
+**ladder score** - represents individuals' life satisfaction and happiness on a scale.
+Standard error of ladder score - the uncertainty associated with each country's happiness estimation
+
+**Logged GDP per capita** - measures the sum of gross value added by all resident producers in the economy plus any product taxes (less subsidies) not included in the valuation of output, divided by mid-year population. This is a popular measure of the economic prosperity of a country. ^[https://databank.worldbank.org/metadataglossary/statistical-capacity-indicators/series/5.51.01.10.gdp#:~:text=Long%20definition-,GDP%20per%20capita%20is%20the%20sum%20of%20gross%20value%20added,GDP%20data%20in%20local%20currency]
+
+**Social support** - reflects the presence of social connections and the availability of a support network on the survey.
+
+**Healthy life expectancy** - signifies the average number of years a person can expect to live in good health.
+
+**Freedom to make life choices** - the national average of binary responses (0=no, 1=yes) to the GWP question, “Are you satisfied or dissatisfied with your freedom to choose what you do with your life? This information is used to assess the degree of personal freedom individuals have in making life decisions.^[https://spontaneousorder.in/happiness-and-freedom-in-india/#:~:text=According%20to%20the%20methodology%20of,you%20do%20with%20your%20life%3F%E2%80%9D]
+
+**Generosity** - "Generosity" pertains to charitable behaviors and kindness within a society. It was a function of the national average of GWP responses to the question “Have you donated money to a charity in the past month?” on GDP per capita.^[https://saas.berkeley.edu/rp/world-happiness-report-eda] 
+
+**Perceptions of corruption** - measures the level of trust in public institutions on the survey.
+
+**Ladder score in Dystopia** - represents a hypothetical country's lowest happiness level, serving as a benchmark.
+
+To better comprehend the data and its relation to the questions posed in the World Happiness Report 2021, it is essential to consider the context of cultural, social, and economic diversity among the surveyed countries. Various factors, such as historical events, regional norms, political stability, and access to resources, can influence happiness levels. There are also unusual factors that may affect the interpretation of results include any exceptional circumstances or external events that occurred during the data collection period. For example, natural disasters, political upheavals, or health crises. In 2021, the COVID-19 pandemic could have temporary impacts on happiness scores, potentially affecting the overall assessment of a country's well-being. Some countries were effected more or handled the pandemic better. This could contribute to their overall happiness score being inflated or deflated.
+
+In the rest of the report, we will demonstrate that people in West Europe report being happier on average than people who do not live in Western Europe. We will use graphics to visualize the relationship. We will then statistically test and analyze this relationship.
+
+## Analysis: West Europe and Others
+First we have preprocessed the data. This preprocessing is to create a more concise and readable dataset that retains only the relevant columns for the analysis of happiness scores in 2021. By selecting specific columns and renaming them to shorter, more informative names, the code simplifies subsequent analysis tasks. To do this we have utilized the rename function. 
+
+Then, we are going to separate countries to two groups, which are Western Europe and others outside the Western Europe.
+```{r, echo=FALSE}
+happiness_eur <- happiness_2021 %>% 
+  mutate(region_type = case_when(
+    region == "Western Europe" ~ "Western Europe",
+    TRUE ~ "Others" )) 
+
+ladder_sum = happiness_eur %>% 
+  group_by(region_type) %>% 
+  summarize(n = n(),
+            mean = mean(ladder_score),
+            sd = sd(ladder_score)) 
+
+ladder_sum
+```
+
+This table is a brief numeric summary of the mean and standard deviation of the ladder score among two groups, where average ladder score is 6.91 for Western Europe countries and 5.31 for other countries. The standard deviation within each group is 0.953 and 0.657 for other countries and West Europe countries. Put differently, Western Europe has higher median and mean ladder scores than other countries, and also less variation in ladder scores.
+
+
+After that, we drew a boxplot with points that shows the distribution of ladder scores for Western Europe and other countries. We specifies the x-axis to be the type of region this country locate, and the y-axis to be the ladder score this country got in 2021. To further clarify, let's break down the components of the boxplot and their meanings:
+Each individual point on the boxplot represents an individual country's ladder score within the respective group (Western Europe or other countries outside Western Europe). In the context of our analysis, each point corresponds to one country's self-reported happiness score (ladder score) for the year 2021. 
+
+```{r, echo=FALSE}
+ggplot(happiness_eur, aes(x = region_type, y = ladder_score, fill = region_type)) +
+  geom_boxplot(coef = Inf, alpha = 0.5) +
+  geom_point(position = position_jitter(width=0.3, height=0)) +
+  xlab("Country") +
+  ylab("Ladder Score") +
+  labs(fill = "Region") +
+  ggtitle("Comparison of ladder score from Western Europe and other countries") +
+  theme_minimal() 
+```
+
+For each box, the middle line is the median of the data, which is the middle value that divides the data into two equal parts. From the plot, we can roughly get that the median ladder score for other countries outside the West Europe is around 5.2. The median ladder score for Western Europe countries is around 7.1. 
+
+The lower line is the first quartile (the 25th percentile) of the data, which is the median of the lower half of the data. It is observed that the 25th percentile are about 4.8 and 6.5 for other countries and West Europe respectively.
+
+The upper line is the third quartile (the 75th percentile) of the data, which is the median of the upper half of the data. We can see that the 75th percentile are around 6 for other countries and 7.2 for Western Europe countries. 
+
+Based on the box plot, most of the points representing countries in Western Europe, lie above the points which represent countries outside Western Europe. In other words, West European countries tend to have higher ladder score than other countries, which indicates that people in Western European countries are happier than people in other countries, indicating higher levels of happiness. 
+
+
+### Populations and Samples
+  - The populations are different countries 
+    - Those countries in Western Europe are one population
+    - Those countries outside Western Europe are another population
+The samples are the countries in the World-happiness 2021 data set
+
+### Statistic Model
+
+- We have two independent samples
+- Treat the data as randomly sampled from larger populations.
+
+Xi∼F1(μ1,σ1),i=1,…,n1
+
+Yi∼F2(μ2,σ2),i=1,…,n2
+
+
+These codes below are trying to perform a two-sample t-test. A two-sample t-test is a statistical method that compares the means of two groups of data and tests whether they are significantly different from each other. We are testing on the difference in means of ladder score between Western Europe and other countries
+
+  - Null hypothesis: true difference in means of ladder score among two regions is equal to 0
+  - Alternative hypothesis: true difference in means of ladder score among two regions is not equal to 0
+
+By using t.test() function and manual calculation, we generated the standard error(SE), t-value(t-stat) and p-value. Next we will present further elaboration and interpretation. 
+```{r, echo=FALSE, include=FALSE}
+
+## use t.test()
+
+x = happiness_eur %>% 
+  filter(region_type == "Others") %>% 
+  pull(ladder_score)
+
+y = happiness_eur %>% 
+  filter(region_type == "Western Europe") %>% 
+  pull(ladder_score)
+
+t.test(x, y) 
+
+```
+
+> Standard Error (SE)
+
+```{r, echo=FALSE}
+dof = 35.554
+mean_x=mean(x)
+s_x = sd(x)
+n_x = length(x)
+
+mean_y = mean(y)
+s_y = sd(y) 
+n_y = length(y)
+
+
+se = sqrt(var(x)/n_x + var(y)/n_y)
+se
+```
+
+SE stands for standard error. In the code, we calculate the standard error (SE) of the difference between two sample means. SE usually quantifies how much the sample statistic is expected to vary from sample to sample. A smaller standard error generally indicates that the sample statistic is more representative of the population parameter. 
+
+In our case, The se was calculated as 0.1661991. The se quantifies the uncertainty associated with the difference in means between our two groups which are Western Europe and other countries. In the context of this experiment, since the calculated standard error is relatively small, it suggests that the observed difference in average happiness scores between Western European countries and other countries outside Western Europe is likely not due to random chance alone. Therefore this makes us more confident to say that the observed difference in means is likely a true reflection of the population's difference than we would've been if we had had a larger SE.
+
+> t-value
+
+```{r, echo=FALSE}
+tstat = (mean(x) - mean(y)) / se
+tstat
+```
+
+The t-stat (or t-value) is a measure that helps determine if the difference between two sample means is statistically significant. In the context of our experiment, the t-statistic is calculated based on the difference between the mean happiness scores of two groups (x and y, representing Western European countries and other countries outside Western Europe) and their standard error. 
+
+The calculated t-statistic of -9.680023 is a strong indicator that there is a significant difference between the average happiness scores of the two groups. Our calculated t-stat of -9.680023 also indicates the difference between the means of the two groups relative to the se. The negative t-stat indicates that the mean scores are significantly higher in Western European countries than in countries outside.
+
+> p-value
+
+```{r, echo=FALSE}
+pvalue = 2*pt(-abs(tstat), dof)
+pvalue
+```
+
+Since the t-value is quite large and the associated p-value is extremely small (1.674e-11), we could conclude that there is strong evidence to reject the null hypothesis. This is because a small p-value suggests that the observed data is unlikely to have occurred if the null hypothesis were true. This provides evidence against the null hypothesis.The rejection of the null hypothesis implies that there is a significant difference in the mean scores between Western European and other countries. In other words, this supports the conclusion Western European countries have significantly higher mean ladder scores than countries outside. This reinforces the validity of our findings regarding the differences in happiness scores between the groups of interest.
+
+> Find a 95% Confidence Interval for μ1−μ2
+
+A confidence interval is a way of expressing how confident we are about an unknown parameter of a population, such as the mean, the proportion, or the difference between two groups. Here we are using it to measure how confident are we about the differences in mean ladder score among Western Europe and other countries. It is a range of values that is likely to contain the true value of the parameter with a certain level of probability. For example, a 95% confidence interval means that if we repeat the same experiment or sampling many times, 95% of the confidence intervals we construct will include the true value of the parameter.
+
+To construct a confidence interval, we add and subtract a margin of error from the sample difference. The margin of error depends on the level of confidence we want, the size of the sample, and the standard deviation of the sample or the population.
+
+```{r, echo=FALSE}
+ci = mean_x - mean_y + c(-1,1)*qt(0.975, dof)*sqrt(s_x^2/n_x + s_y^2/n_y)
+ci
+
+```
+
+> We are 95% confident that the mean ladder score among other countries is between 1.27 and 1.94 shorter than the mean ladder score among western countries. 
+
+
+## Discussion 
+1. Broader Interpretations of the Analysis:
+
+The analysis compared the happiness scores (ladder scores) between countries in Western Europe and those outside Western Europe. The findings suggest that, on average, Western European countries have higher happiness scores (6.91) compared to other countries outside Western Europe (5.31). The box plot indicates that Western Europe has higher median and mean ladder scores, as well as lower variation in ladder scores compared to other regions. Additionally, a two-sample t-test was performed and the confidence interval was calculated, revealing that the mean ladder score among other countries is estimated to be 1.27 to 1.94 units shorter than the mean ladder score among Western European countries with 95% confidence.
+
+2. Shortcomings of the Analysis:
+
+- The analysis assumes that the data is randomly sampled from larger populations. If the data is not representative, the conclusions drawn might not accurately reflect the true differences between Western European and other countries.
+- The analysis used a two-sample t-test to compare the means of two groups. While this test is common and useful, it assumes equal variances between the groups and independence of observations. Violation of these assumptions may affect the validity of the results.
+
+3. Potential Future Directions for Additional Work:
+
+- Incorporating more recent data and expanding the analysis to include a broader range of countries to account for changes and developments over time.
+- Considering the impact of external events (e.g., global economic shifts, political changes) on happiness trends in different regions.
+- Exploring regional differences in happiness beyond Western Europe and other regions to gain insights into variations within each group.
+- Try to test how different variables impact the happiness score greater or lesser, depending on the region
+
+4. New Questions:
+
+- How does social support, health care, and income distribution contribute to differences in happiness between Western European and other countries?
+- Are there specific policies or practices in Western European countries that might explain the higher levels of happiness compared to other regions?
+- How do economic disparities within Western European countries impact happiness levels?
+- Is there any correlation between cultural factors and happiness in different regions?
+
+5. Different Method to Address the Same Questions:
+
+- Instead of using a t-test, we can use regression. Using a regression analysis, we can explore the relationship between various independent variables (e.g., GDP, freedom) and the dependent variable (happiness scores). By including a binary variable for the Western European region (coded as 0 or 1), we can perform multiple regression to examine whether there is a significant difference in happiness scores between the two groups while controlling for other factors. The regression coefficients associated with the binary variable can indicate the magnitude and direction of the difference. Additionally, interactions between the binary variable and other independent variables can be included to investigate whether the effect of certain factors on happiness differs between the two regions.
+
+6. New Data to Refine Understanding:
+
+- Collecting data on social support networks, mental health services, and government policies related to happiness and well-being.
+- Including data on income inequality, education levels, and quality of public infrastructure to further understand the factors influencing happiness in different regions.
+
+7. Primary Conclusions and Evidence:
+
+- The primary conclusions are:
+
+  - **Western European countries tend to have higher happiness scores compared to countries outside Western Europe.**
+  - **The mean ladder score among other countries is estimated to be shorter than that of Western European countries with 95% confidence.**
+
+- The primary evidence supporting these conclusions includes:
+
+  - The numerical summary showing the average ladder scores for each group.
+  - The box plot visualizing the distribution of ladder scores for both groups.
+  - The results of the two-sample t-test comparing the mean ladder scores between the two groups and providing a confidence interval for the difference.
+
+
+
